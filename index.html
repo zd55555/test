@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Back of Envelope</title>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.284.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState } = React;
+        const icons = lucide;
+
+        const BudgetTool = () => {
+            const [balance, setBalance] = useState(0.00);
+            const [transactions, setTransactions] = useState([]);
+
+            const addTransaction = (type, amount, description) => {
+                const newTransaction = {
+                    id: Date.now(),
+                    type,
+                    amount: parseFloat(amount),
+                    description,
+                    date: new Date().toLocaleString()
+                };
+                setTransactions([newTransaction, ...transactions]);
+                setBalance(prev => type === 'income' ? prev + parseFloat(amount) : prev - parseFloat(amount));
+            };
+
+            const handleSubmit = (type) => (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const amount = form.amount.value;
+                const description = form.description.value;
+                if (amount && description) {
+                    addTransaction(type, amount, description);
+                    form.reset();
+                }
+            };
+
+            const deleteTransaction = (transactionId, transactionType, transactionAmount) => {
+                setTransactions(transactions.filter(t => t.id !== transactionId));
+                setBalance(prev => transactionType === 'income' ? 
+                    prev - parseFloat(transactionAmount) : 
+                    prev + parseFloat(transactionAmount)
+                );
+            };
+
+            const resetAll = () => {
+                if (window.confirm('Are you sure you want to clear all transactions?')) {
+                    setTransactions([]);
+                    setBalance(0.00);
+                }
+            };
+
+            return (
+                <div className="p-4 max-w-md mx-auto">
+                    <div className="text-center mb-6">
+                        <h2 className="text-lg text-gray-600">Current Balance</h2>
+                        <div className="text-4xl font-bold text-green-500">${balance.toFixed(2)}</div>
+                    </div>
+
+                    <div className="bg-green-50 p-4 rounded-lg mb-4">
+                        <h3 className="text-green-700 font-medium mb-2">Add Income</h3>
+                        <form onSubmit={handleSubmit('income')}>
+                            <input
+                                type="number"
+                                name="amount"
+                                placeholder="Amount"
+                                step="0.01"
+                                className="w-full p-2 mb-2 border rounded"
+                                required
+                            />
+                            <input
+                                type="text"
+                                name="description"
+                                placeholder="Description"
+                                className="w-full p-2 mb-2 border rounded"
+                                required
+                            />
+                            <button 
+                                type="submit"
+                                className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600"
+                            >
+                                Add Income
+                            </button>
+                        </form>
+                    </div>
+
+                    <div className="bg-red-50 p-4 rounded-lg mb-4">
+                        <h3 className="text-red-700 font-medium mb-2">Add Expense</h3>
+                        <form onSubmit={handleSubmit('expense')}>
+                            <input
+                                type="number"
+                                name="amount"
+                                placeholder="Amount"
+                                step="0.01"
+                                className="w-full p-2 mb-2 border rounded"
+                                required
+                            />
+                            <input
+                                type="text"
+                                name="description"
+                                placeholder="Description"
+                                className="w-full p-2 mb-2 border rounded"
+                                required
+                            />
+                            <button 
+                                type="submit"
+                                className="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600"
+                            >
+                                Add Expense
+                            </button>
+                        </form>
+                    </div>
+
+                    <div>
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="font-medium">Recent Transactions</h3>
+                            {transactions.length > 0 && (
+                                <button 
+                                    onClick={resetAll}
+                                    className="text-sm text-red-500 hover:text-red-600"
+                                >
+                                    Clear All
+                                </button>
+                            )}
+                        </div>
+                        <div className="space-y-2">
+                            {transactions.map(transaction => (
+                                <div 
+                                    key={transaction.id}
+                                    className={`p-3 rounded flex justify-between items-center ${
+                                        transaction.type === 'income' ? 'bg-green-50' : 'bg-red-50'
+                                    }`}
+                                >
+                                    <div>
+                                        <div className="font-medium">{transaction.description}</div>
+                                        <div className="text-xs text-gray-500">{transaction.date}</div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`font-medium ${
+                                            transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                                        }`}>
+                                            {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                                        </div>
+                                        <button 
+                                            onClick={() => deleteTransaction(transaction.id, transaction.type, transaction.amount)}
+                                            className="text-gray-400 hover:text-red-500 p-1"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<BudgetTool />, document.getElementById('root'));
+    </script>
+</body>
+</html>
